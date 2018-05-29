@@ -1,5 +1,3 @@
-// @flow
-
 import crypto from 'crypto';
 import crypt3 from './crypt3';
 import md5 from 'apache-md5';
