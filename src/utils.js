@@ -8,7 +8,7 @@ import * as locker from '@fem/file-locking';
 
 // this function neither unlocks file nor closes it
 // it'll have to be done manually later
-export function lockAndRead(name: string, cb: Function): void {
+export function lockAndRead(name, cb) {
   locker.readFile(name, { lock: true }, (err, res) => {
     if (err) {
       return cb(err);
@@ -19,7 +19,7 @@ export function lockAndRead(name: string, cb: Function): void {
 }
 
 // close and unlock file
-export function unlockFile(name: string, cb: Function): void {
+export function unlockFile(name, cb) {
   locker.unlockFile(name, cb);
 }
 
@@ -28,7 +28,7 @@ export function unlockFile(name: string, cb: Function): void {
  * @param {string} input
  * @returns {object}
  */
-export function parseHTPasswd(input: string): Object {
+export function parseHTPasswd(input) {
   return input.split('\n').reduce((result, line) => {
     const args = line.split(':', 3);
     if (args.length > 1) result[args[0]] = args[1];
@@ -42,7 +42,7 @@ export function parseHTPasswd(input: string): Object {
  * @param {string} hash
  * @returns {boolean}
  */
-export function verifyPassword(passwd: string, hash: string): boolean {
+export function verifyPassword(passwd, hash) {
   if (hash.match(/^\$2(a|b|y)\$/)) {
     return bcrypt.compareSync(passwd, hash);
   } else if (hash.indexOf('{PLAIN}') === 0) {
@@ -66,11 +66,7 @@ export function verifyPassword(passwd: string, hash: string): boolean {
  * @param {string} passwd
  * @returns {string}
  */
-export function addUserToHTPasswd(
-  body: string,
-  user: string,
-  passwd: string
-): string {
+export function addUserToHTPasswd(body, user, passwd) {
   if (user !== encodeURIComponent(user)) {
     const err = Error('username should not contain non-uri-safe characters');
 
@@ -107,13 +103,7 @@ export function addUserToHTPasswd(
  * @param {number} maxUsers
  * @returns {object}
  */
-export function sanityCheck(
-  user: string,
-  password: string,
-  verifyFn: Function,
-  users: {},
-  maxUsers: number
-) {
+export function sanityCheck(user, password, verifyFn, users, maxUsers) {
   let err;
   let hash;
 
