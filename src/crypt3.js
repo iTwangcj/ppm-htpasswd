@@ -17,23 +17,23 @@ import crypto from 'crypto';
  * distros), sha256 or sha512. Default is sha512.
  * @returns {string} Generated salt string
  */
-export function createSalt(type: string = 'sha512'): string {
-  switch (type) {
-    case 'md5':
-      return '$1$' + crypto.randomBytes(10).toString('base64');
-
-    case 'blowfish':
-      return '$2a$' + crypto.randomBytes(10).toString('base64');
-
-    case 'sha256':
-      return '$5$' + crypto.randomBytes(10).toString('base64');
-
-    case 'sha512':
-      return '$6$' + crypto.randomBytes(10).toString('base64');
-
-    default:
-      throw new TypeError(`Unknown salt type at crypt3.createSalt: ${type}`);
-  }
+export function createSalt (type: string = 'sha512'): string {
+    switch (type) {
+        case 'md5':
+            return '$1$' + crypto.randomBytes(10).toString('base64');
+        
+        case 'blowfish':
+            return '$2a$' + crypto.randomBytes(10).toString('base64');
+        
+        case 'sha256':
+            return '$5$' + crypto.randomBytes(10).toString('base64');
+        
+        case 'sha512':
+            return '$6$' + crypto.randomBytes(10).toString('base64');
+        
+        default:
+            throw new TypeError(`Unknown salt type at crypt3.createSalt: ${type}`);
+    }
 }
 
 /**
@@ -44,9 +44,9 @@ export function createSalt(type: string = 'sha512'): string {
  * @see https://en.wikipedia.org/wiki/Crypt_(C)
  */
 
-export default function crypt3(
-  key: string,
-  salt: string = createSalt()
+export default function crypt3 (
+    key: string,
+    salt: string = createSalt()
 ): string {
-  return crypt(key, salt);
+    return crypt(key, salt);
 }

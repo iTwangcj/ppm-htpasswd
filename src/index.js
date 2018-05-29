@@ -7,5 +7,5 @@ import HTPasswd from './htpasswd';
  * @returns {object}
  */
 export default function(config, stuff) {
-  return new HTPasswd(config, stuff);
+    return new HTPasswd(config, stuff);
 }

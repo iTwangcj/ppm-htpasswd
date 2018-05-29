@@ -1,213 +1,198 @@
-// @flow
-
 import fs from 'fs';
 import Path from 'path';
 import {
-  verifyPassword,
-  lockAndRead,
-  unlockFile,
-  parseHTPasswd,
-  addUserToHTPasswd,
-  sanityCheck
+    verifyPassword,
+    lockAndRead,
+    unlockFile,
+    parseHTPasswd,
+    addUserToHTPasswd,
+    sanityCheck
 } from './utils';
 
 /**
  * HTPasswd - ppm auth class
  */
 export default class HTPasswd {
-  /**
-   *
-   * @param {*} config htpasswd file
-   * @param {object} stuff config.yaml in object from
-   */
-  // flow types
-  users: {};
-  stuff: {};
-  config: {};
-  ppmConfig: {};
-  maxUsers: number;
-  path: string;
-  logger: {};
-  lastTime: any;
-
-  // constructor
-  constructor(
-    config: {
-      file: string,
-      max_users: number
-    },
-    stuff: {
-      [config: string]: {
-        users_file: string,
-        self_path: string
-      }
-    }
-  ) {
-    this.users = {};
-
-    // config for this module
-    this.config = config;
-    this.stuff = stuff;
-
-    // ppm logger
-    this.logger = stuff.logger;
-
-    // ppm main config object
-    this.ppmConfig = stuff.config;
-
-    // all this "ppm_config" stuff is for b/w compatibility only
-    this.maxUsers = config.max_users ? config.max_users : Infinity;
-
-    this.lastTime = null;
-
-    let { file } = config;
-
-    if (!file) {
-      file = this.ppmConfig.users_file;
-    }
-
-    if (!file) {
-      throw new Error('should specify "file" in config');
-    }
-
-    this.path = Path.resolve(Path.dirname(this.ppmConfig.self_path), file);
-  }
-
-  /**
-   * authenticate - Authenticate user.
-   * @param {string} user
-   * @param {string} password
-   * @param {function} cb
-   * @returns {function}
-   */
-  authenticate(user: string, password: string, cb: Function) {
-    this.reload(err => {
-      if (err) {
-        return cb(err.code === 'ENOENT' ? null : err);
-      }
-      if (!this.users[user]) {
-        return cb(null, false);
-      }
-      if (!verifyPassword(password, this.users[user])) {
-        return cb(null, false);
-      }
-
-      // authentication succeeded!
-      // return all usergroups this user has access to;
-      // (this particular package has no concept of usergroups, so just return
-      // user herself)
-      return cb(null, [user]);
-    });
-  }
-
-  /**
-   * Add user
-   * 1. lock file for writing (other processes can still read)
-   * 2. reload .htpasswd
-   * 3. write new data into .htpasswd.tmp
-   * 4. move .htpasswd.tmp to .htpasswd
-   * 5. reload .htpasswd
-   * 6. unlock file
-   *
-   * @param {string} user
-   * @param {string} password
-   * @param {function} realCb
-   * @returns {function}
-   */
-  adduser(user: string, password: string, realCb: Function) {
-    let sanity = sanityCheck(
-      user,
-      password,
-      verifyPassword,
-      this.users,
-      this.maxUsers
-    );
-
-    // preliminary checks, just to ensure that file won't be reloaded if it's
-    // not needed
-    if (sanity) {
-      return realCb(sanity, false);
-    }
-
-    lockAndRead(this.path, (err, res) => {
-      let locked = false;
-
-      // callback that cleans up lock first
-      const cb = err => {
-        if (locked) {
-          unlockFile(this.path, () => {
-            // ignore any error from the unlock
-            realCb(err, !err);
-          });
-        } else {
-          realCb(err, !err);
+    /**
+     *
+     * @param {*} config htpasswd file
+     * @param {object} stuff config.yaml in object from
+     */
+    users;
+    stuff;
+    config;
+    ppmConfig;
+    maxUsers;
+    path;
+    logger;
+    lastTime;
+    
+    constructor (config, stuff) {
+        this.users = {};
+        
+        // config for this module
+        this.config = config;
+        this.stuff = stuff;
+        
+        // ppm logger
+        this.logger = stuff.logger;
+        
+        // ppm main config object
+        this.ppmConfig = stuff.config;
+        
+        // all this "ppm_config" stuff is for b/w compatibility only
+        this.maxUsers = config.max_users ? config.max_users : Infinity;
+        
+        this.lastTime = null;
+        
+        let { file } = config;
+        
+        if (!file) {
+            file = this.ppmConfig.users_file;
         }
-      };
-
-      if (!err) {
-        locked = true;
-      }
-
-      // ignore ENOENT errors, we'll just create .htpasswd in that case
-      if (err && err.code !== 'ENOENT') return cb(err);
-
-      let body = (res || '').toString('utf8');
-      this.users = parseHTPasswd(body);
-
-      // real checks, to prevent race conditions
-      // parsing users after reading file.
-      sanity = sanityCheck(
-        user,
-        password,
-        verifyPassword,
-        this.users,
-        this.maxUsers
-      );
-
-      if (sanity) {
-        return cb(sanity);
-      }
-
-      try {
-        body = addUserToHTPasswd(body, user, password);
-      } catch (err) {
-        return cb(err);
-      }
-
-      fs.writeFile(this.path, body, err => {
-        if (err) {
-          return cb(err);
+        
+        if (!file) {
+            throw new Error('should specify "file" in config');
         }
-        this.reload(() => {
-          cb(null);
+        
+        this.path = Path.resolve(Path.dirname(this.ppmConfig.self_path), file);
+    }
+    
+    /**
+     * authenticate - Authenticate user.
+     * @param {string} user
+     * @param {string} password
+     * @param {function} cb
+     * @returns {function}
+     */
+    authenticate (user, password, cb) {
+        this.reload(err => {
+            if (err) {
+                return cb(err.code === 'ENOENT' ? null : err);
+            }
+            if (!this.users[user]) {
+                return cb(null, false);
+            }
+            if (!verifyPassword(password, this.users[user])) {
+                return cb(null, false);
+            }
+            
+            // authentication succeeded!
+            // return all usergroups this user has access to;
+            // (this particular package has no concept of usergroups, so just return
+            // user herself)
+            return cb(null, [user]);
         });
-      });
-    });
-  }
-
-  /**
-   * Reload users
-   * @param {function} callback
-   */
-  reload(callback: Function) {
-    fs.stat(this.path, (err, stats) => {
-      if (err) {
-        return callback(err);
-      }
-      if (this.lastTime === stats.mtime) {
-        return callback();
-      }
-
-      this.lastTime = stats.mtime;
-
-      fs.readFile(this.path, 'utf8', (err, buffer) => {
-        if (err) {
-          return callback(err);
+    }
+    
+    /**
+     * Add user
+     * 1. lock file for writing (other processes can still read)
+     * 2. reload .htpasswd
+     * 3. write new data into .htpasswd.tmp
+     * 4. move .htpasswd.tmp to .htpasswd
+     * 5. reload .htpasswd
+     * 6. unlock file
+     *
+     * @param {string} user
+     * @param {string} password
+     * @param {function} realCb
+     * @returns {function}
+     */
+    adduser (user, password, realCb) {
+        let sanity = sanityCheck(
+            user,
+            password,
+            verifyPassword,
+            this.users,
+            this.maxUsers
+        );
+        
+        // preliminary checks, just to ensure that file won't be reloaded if it's
+        // not needed
+        if (sanity) {
+            return realCb(sanity, false);
         }
-
-        Object.assign(this.users, parseHTPasswd(buffer));
-        callback();
-      });
-    });
-  }
+        
+        lockAndRead(this.path, (err, res) => {
+            let locked = false;
+            
+            // callback that cleans up lock first
+            const cb = err => {
+                if (locked) {
+                    unlockFile(this.path, () => {
+                        // ignore any error from the unlock
+                        realCb(err, !err);
+                    });
+                } else {
+                    realCb(err, !err);
+                }
+            };
+            
+            if (!err) {
+                locked = true;
+            }
+            
+            // ignore ENOENT errors, we'll just create .htpasswd in that case
+            if (err && err.code !== 'ENOENT') return cb(err);
+            
+            let body = (res || '').toString('utf8');
+            this.users = parseHTPasswd(body);
+            
+            // real checks, to prevent race conditions
+            // parsing users after reading file.
+            sanity = sanityCheck(
+                user,
+                password,
+                verifyPassword,
+                this.users,
+                this.maxUsers
+            );
+            
+            if (sanity) {
+                return cb(sanity);
+            }
+            
+            try {
+                body = addUserToHTPasswd(body, user, password);
+            } catch (err) {
+                return cb(err);
+            }
+            
+            fs.writeFile(this.path, body, err => {
+                if (err) {
+                    return cb(err);
+                }
+                this.reload(() => {
+                    cb(null);
+                });
+            });
+        });
+    }
+    
+    /**
+     * Reload users
+     * @param {function} callback
+     */
+    reload (callback) {
+        fs.stat(this.path, (err, stats) => {
+            if (err) {
+                return callback(err);
+            }
+            if (this.lastTime === stats.mtime) {
+                return callback();
+            }
+            
+            this.lastTime = stats.mtime;
+            
+            fs.readFile(this.path, 'utf8', (err, buffer) => {
+                if (err) {
+                    return callback(err);
+                }
+                
+                Object.assign(this.users, parseHTPasswd(buffer));
+                callback();
+            });
+        });
+    }
 }
