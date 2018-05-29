@@ -2,7 +2,7 @@
 
 `ppm-htpasswd` is a default authentication plugin for the [PPM](https://github.com/ppm/ppm).
 
-> This plugin is being used as dependency after `v1.0.0`.
+> This plugin is being used as dependency after `v1.0.2`.
 
 ## Install
 
